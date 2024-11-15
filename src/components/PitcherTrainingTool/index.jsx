@@ -188,10 +188,17 @@ const calculateOutcome = (pitch, location, batter, velocity, count) => {
 };
 
 const getRandomVelocity = (pitch, fatigue) => {
-  const fatigueEffect = (fatigue / 100) * 2;
-  const baseVelo = pitch.baseVelo - fatigueEffect;
-  const range = pitch.range;
-  return (baseVelo - range/2 + Math.random() * range).toFixed(1);
+  try {
+    const fatigueEffect = Number((fatigue / 100) * 2);
+    const baseVelo = Number(pitch.baseVelo) - fatigueEffect;
+    const range = Number(pitch.range);
+    const randomVariation = Math.random() * range;
+    const finalVelocity = baseVelo - (range/2) + randomVariation;
+    return String(Number(finalVelocity).toFixed(1));
+  } catch (error) {
+    console.error('Velocity calculation error:', error);
+    return String(pitch.baseVelo);
+  }
 };
 
 const PitcherTrainingTool = () => {
@@ -268,7 +275,7 @@ const PitcherTrainingTool = () => {
     const newPitch = {
       type: activePitch,
       pitch: pitch.name,
-      velocity: velocity.toFixed(1),
+      velocity: velocity,
       location: zone,
       outcome: resultDescription,
       count: `${gameState.count.balls}-${gameState.count.strikes}`
