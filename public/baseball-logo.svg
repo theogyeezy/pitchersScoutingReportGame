@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <circle cx="256" cy="256" r="248" fill="#f9f9f9" stroke="#333" stroke-width="16"/>
+  <!-- Baseball stitching -->
+  <path d="M256 8 C256 504" fill="none" stroke="#d12" stroke-width="3" stroke-dasharray="20,20" />
+  <path d="M8 256 C504 256" fill="none" stroke="#d12" stroke-width="3" stroke-dasharray="20,20" />
+  <path d="M40 130 Q256 256 472 130" fill="none" stroke="#d12" stroke-width="3" stroke-dasharray="15,15" />
+  <path d="M40 382 Q256 256 472 382" fill="none" stroke="#d12" stroke-width="3" stroke-dasharray="15,15" />
+</svg>
