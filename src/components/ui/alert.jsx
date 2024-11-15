@@ -1,22 +1,16 @@
-import * as React from "react";
+import React from 'react';
 
-const Alert = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={`rounded-lg border p-4 ${className}`}
-    {...props}
-  />
-));
-Alert.displayName = "Alert";
+export const Alert = ({ children, className = '' }) => (
+  <div 
+    role="alert" 
+    className={`rounded-lg border p-4 bg-yellow-50 ${className}`}
+  >
+    {children}
+  </div>
+);
 
-const AlertDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={`text-sm [&_p]:leading-relaxed ${className}`}
-    {...props}
-  />
-));
-AlertDescription.displayName = "AlertDescription";
-
-export { Alert, AlertDescription };
+export const AlertDescription = ({ children, className = '' }) => (
+  <div className={`text-sm [&_p]:leading-relaxed ${className}`}>
+    {children}
+  </div>
+);
