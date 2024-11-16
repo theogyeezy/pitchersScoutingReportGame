@@ -120,69 +120,60 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
     switch (zoneType) {
       case ZONE_TYPES.HEART:
         return parseFloat(stats.avg) > 0.300 
-          ? 'bg-red-100 hover:bg-red-200' 
-          : 'bg-green-100 hover:bg-green-200';
+          ? 'bg-white border border-red-300' 
+          : 'bg-white border border-gray-300';
       case ZONE_TYPES.EDGE:
-        return 'bg-yellow-100 hover:bg-yellow-200';
+        return 'bg-yellow-50 border border-yellow-200';
       case ZONE_TYPES.CHASE:
-        return 'bg-blue-100 hover:bg-blue-200';
+        return 'bg-blue-50 border border-blue-200';
       default:
         return '';
     }
   };
 
-  const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
+  // const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
 
-  const renderZone = (location, label, type) => {
-    const stats = batter.zones[location] || { avg: ".000", slug: ".000", whiff: "0%" };
-    const isRecommended = (
-      (strategy.r2k_boost > 1.2 && type === ZONE_TYPES.CHASE) ||
-      (strategy.r2k_boost > 1 && type === ZONE_TYPES.EDGE)
-    );
-
+  const renderZone = (location, label, type, width = 'w-24', height = 'h-20') => {
+    const stats = batter.zones[location] || { avg: ".000" };
+    
     return (
       <button
         onClick={() => onSelectZone(location)}
         className={`
-          w-full h-full p-2 rounded relative transition
+          ${width} ${height} p-1 rounded relative transition
+          hover:bg-opacity-80 flex flex-col justify-center items-center
           ${getZoneStyle(type, stats)}
-          ${isRecommended ? 'border-2 border-blue-400' : ''}
         `}
       >
         <div className="text-xs font-bold">{label}</div>
         <div className="text-xs">AVG: {stats.avg}</div>
-        {isRecommended && (
-          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-            R2K+
-          </div>
-        )}
       </button>
     );
   };
 
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      {/* Strike Zone Grid */}
-      <div className="relative border-2 border-gray-400 p-1">
-        {/* Top Row - Chase/Borderline */}
-        <div className="grid grid-cols-3 gap-1 mb-1">
-          <div></div>
-          {renderZone('chase_up', 'Chase High', ZONE_TYPES.CHASE)}
-          <div></div>
+    <div className="w-full max-w-3xl mx-auto p-4">
+      <div className="relative flex flex-col items-center">
+        {/* Chase High */}
+        <div className="mb-1">
+          {renderZone('chase_up', 'Chase High', ZONE_TYPES.CHASE, 'w-24', 'h-12')}
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-5 gap-1">
-          {/* Left Column - Chase/Borderline */}
-          <div className="flex flex-col justify-center">
-            {renderZone('chase_in', 'Chase In', ZONE_TYPES.CHASE)}
-          </div>
-          <div className="flex flex-col justify-center">
-            {renderZone('borderline_in', 'Border In', ZONE_TYPES.EDGE)}
+        {/* Main Grid Row */}
+        <div className="flex justify-center items-center">
+          {/* Chase Inside */}
+          <div className="mr-1">
+            {renderZone('chase_in', 'Chase In', ZONE_TYPES.CHASE, 'w-12', 'h-60')}
           </div>
 
-          {/* Center 3x3 Grid */}
-          <div className="grid grid-cols-3 gap-1">
+          {/* Border Inside */}
+          <div className="mr-1">
+            {renderZone('borderline_in', 'Border In', ZONE_TYPES.EDGE, 'w-8', 'h-60')}
+          </div>
+
+          {/* Core Strike Zone */}
+          <div className="grid grid-cols-3 gap-px bg-gray-200 p-px">
             {[
               { loc: 'up_in', label: 'High In' },
               { loc: 'up_middle', label: 'High Mid' },
@@ -194,51 +185,48 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
               { loc: 'down_middle', label: 'Low Mid' },
               { loc: 'down_away', label: 'Low Away' }
             ].map((zone, idx) => (
-              <div key={idx} className="aspect-square">
+              <div key={idx} className="w-24 h-20">
                 {renderZone(zone.loc, zone.label, ZONE_TYPES.HEART)}
               </div>
             ))}
           </div>
 
-          {/* Right Column - Chase/Borderline */}
-          <div className="flex flex-col justify-center">
-            {renderZone('borderline_away', 'Border Out', ZONE_TYPES.EDGE)}
+          {/* Border Outside */}
+          <div className="ml-1">
+            {renderZone('borderline_away', 'Border Out', ZONE_TYPES.EDGE, 'w-8', 'h-60')}
           </div>
-          <div className="flex flex-col justify-center">
-            {renderZone('chase_away', 'Chase Out', ZONE_TYPES.CHASE)}
+
+          {/* Chase Outside */}
+          <div className="ml-1">
+            {renderZone('chase_away', 'Chase Out', ZONE_TYPES.CHASE, 'w-12', 'h-60')}
           </div>
         </div>
 
-        {/* Bottom Row - Chase/Borderline */}
-        <div className="grid grid-cols-3 gap-1 mt-1">
-          <div></div>
-          {renderZone('chase_down', 'Chase Low', ZONE_TYPES.CHASE)}
-          <div></div>
+        {/* Chase Low */}
+        <div className="mt-1">
+          {renderZone('chase_down', 'Chase Low', ZONE_TYPES.CHASE, 'w-24', 'h-12')}
         </div>
-      </div>
 
-      {/* Legend */}
-      <div className="mt-4 flex justify-center gap-4 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-green-100 rounded"></div>
-          <span>Strike</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-yellow-100 rounded"></div>
-          <span>Border</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-blue-100 rounded"></div>
-          <span>Chase</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-red-100 rounded"></div>
-          <span>Hot Zone</span>
+        {/* Legend */}
+        <div className="mt-6 flex justify-center gap-4 text-xs">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
+            <span>Strike Zone</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
+            <span>Borderline</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div>
+            <span>Chase</span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
 
 const BatterAnalysis = ({ batter }) => {
   const [showExpected, setShowExpected] = useState(false);
