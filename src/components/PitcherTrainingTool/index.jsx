@@ -273,44 +273,54 @@ const BatterAnalysis = ({ batter }) => {
   const [showExpected, setShowExpected] = useState(false);
 
   return (
-    <div className="mb-6 p-4 bg-white rounded-lg shadow">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h3 className="text-lg font-bold mb-2">{batter.name}</h3>
-          <div className="space-y-1">
+    <div className="mb-4 p-2 sm:p-4 bg-white rounded-lg shadow">
+      {/* Batter Info - Stack on mobile */}
+      <div className="flex flex-col sm:flex-row sm:gap-4">
+        <div className="mb-2 sm:mb-0">
+          <h3 className="text-base sm:text-lg font-bold">{batter.name}</h3>
+          <div className="text-sm space-y-1">
             <p>Bats: {batter.bats} | AVG: {batter.avg}</p>
             <p>SLG: {batter.slugging} | OPS: {batter.ops}</p>
           </div>
         </div>
-        <div className="border-l pl-4">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-bold">Hot Zones</h4>
+
+        {/* Hot Zones Section */}
+        <div className="flex-1 mt-2 sm:mt-0 sm:border-l sm:pl-4">
+          {/* Toggle and Title in Flex Container */}
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-bold text-sm sm:text-base">Hot Zones</h4>
             <button
               onClick={() => setShowExpected(!showExpected)}
-              className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded transition"
+              className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm 
+                         bg-blue-100 hover:bg-blue-200 rounded transition
+                         flex items-center justify-center whitespace-nowrap"
             >
-              Show {showExpected ? "AVG" : "Expected Stats"}
+              {showExpected ? "Show AVG" : "Expected Stats"}
             </button>
           </div>
-          <div className="grid grid-cols-3 gap-1">
+
+          {/* Hot Zones Grid - Made more compact on mobile */}
+          <div className="grid grid-cols-3 gap-1 text-center">
             {Object.entries(batter.zones)
               .filter(([key]) => !key.includes('borderline') && !key.includes('chase'))
               .map(([zone, stats]) => (
-                <div
-                  key={zone}
-                  className={`p-2 text-xs rounded ${parseFloat(stats.avg) > 0.300
-                      ? 'bg-red-100'
-                      : 'bg-green-100'
-                    }`}
+                <div 
+                  key={zone} 
+                  className={`
+                    p-1 sm:p-2 rounded 
+                    ${parseFloat(stats.avg) > 0.300 ? 'bg-red-100' : 'bg-green-100'}
+                  `}
                 >
-                  <div className="font-bold">{zone.replace('_', ' ')}</div>
+                  <div className="text-[10px] sm:text-xs font-bold">
+                    {zone.replace('_', ' ').split(' ').map(word => word[0]).join('')}
+                  </div>
                   {showExpected ? (
-                    <>
-                      <div>SLG: {stats.slug}</div>
-                      <div>Whiff: {stats.whiff}</div>
-                    </>
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] sm:text-xs">SLG: {stats.slug}</div>
+                      <div className="text-[10px] sm:text-xs">K%: {stats.whiff}</div>
+                    </div>
                   ) : (
-                    <div>AVG: {stats.avg}</div>
+                    <div className="text-[10px] sm:text-xs">{stats.avg}</div>
                   )}
                 </div>
               ))}
@@ -318,27 +328,30 @@ const BatterAnalysis = ({ batter }) => {
         </div>
       </div>
 
-      <div className="mt-4">
-        <h4 className="font-bold mb-2">Pitch Type Performance</h4>
-        <div className="grid grid-cols-3 gap-2">
+      {/* Pitch Type Stats - Scrollable on mobile */}
+      <div className="mt-3 sm:mt-4">
+        <h4 className="font-bold text-sm sm:text-base mb-1">Pitch Type Performance</h4>
+        <div className="flex sm:grid sm:grid-cols-3 gap-2 overflow-x-auto pb-2 sm:pb-0">
           {Object.entries(batter.pitchTypes).map(([type, value]) => (
-            <div key={type} className="p-2 bg-gray-50 rounded">
-              <div className="font-bold text-sm">{type}</div>
-              <div>{value}</div>
+            <div key={type} className="flex-shrink-0 sm:flex-shrink p-2 bg-gray-50 rounded min-w-[100px] sm:min-w-0">
+              <div className="text-xs sm:text-sm font-bold">{type}</div>
+              <div className="text-xs sm:text-sm">{value}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-4">
-        <h4 className="font-bold mb-2">Scouting Notes</h4>
-        <pre className="text-sm whitespace-pre-wrap bg-gray-50 p-2 rounded">
+      {/* Scouting Notes - Full width and readable on mobile */}
+      <div className="mt-3 sm:mt-4">
+        <h4 className="font-bold text-sm sm:text-base mb-1">Scouting Notes</h4>
+        <pre className="text-xs sm:text-sm whitespace-pre-wrap bg-gray-50 p-2 rounded leading-relaxed">
           {batter.notes}
         </pre>
       </div>
     </div>
   );
 };
+
 const PitchSelection = ({ pitcher, onSelect }) => (
   <div className="grid grid-cols-2 gap-2 mb-4">
     {Object.entries(pitcher.pitches).map(([key, pitch]) => (
