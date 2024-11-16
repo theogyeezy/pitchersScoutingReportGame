@@ -121,8 +121,8 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
   const getZoneStyle = (zoneType, stats, location) => {
     // Base style based on zone type
     const baseStyle = {
-      [ZONE_TYPES.HEART]: parseFloat(stats.avg) > 0.300 
-        ? 'bg-white border border-red-300' 
+      [ZONE_TYPES.HEART]: parseFloat(stats.avg) > 0.300
+        ? 'bg-white border border-red-300'
         : 'bg-white border border-gray-300',
       [ZONE_TYPES.EDGE]: 'bg-yellow-50 border border-yellow-200',
       [ZONE_TYPES.CHASE]: 'bg-blue-50 border border-blue-200'
@@ -130,7 +130,7 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
 
     // Add R2K highlight based on strategy
     const isExpandedZone = (zoneType === ZONE_TYPES.CHASE && currentStrategy.r2k_boost > 1.2) ||
-                          (zoneType === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
+      (zoneType === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
 
     return `${baseStyle} ${isExpandedZone ? 'border-2 border-blue-400' : ''}`;
   };
@@ -141,8 +141,8 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
   const renderZone = (location, label, type, width = 'w-16 sm:w-24', height = 'h-16 sm:h-20') => {
     const stats = batter.zones[location] || { avg: ".000" };
     const isOptimalZone = (type === ZONE_TYPES.CHASE && currentStrategy.r2k_boost > 1.2) ||
-                         (type === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
-    
+      (type === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
+
     return (
       <button
         onClick={() => onSelectZone(location)}
@@ -162,7 +162,7 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
       </button>
     );
   };
-  
+
 
 
   return (
@@ -176,9 +176,15 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
 
         {/* Mobile-Optimized Strike Zone */}
         <div className="scale-[0.85] sm:scale-100 transform-gpu origin-top">
-          {/* Chase High */}
-          <div className="mb-1">
-            {renderZone('chase_up', 'High', ZONE_TYPES.CHASE, 'w-16 sm:w-24', 'h-8 sm:h-12')}
+          {/* Chase High - Now spans full width */}
+          <div className="mb-1 w-full flex justify-center">
+            {renderZone(
+              'chase_up',
+              'High',
+              ZONE_TYPES.CHASE,
+              'w-[calc(100%-32px)] sm:w-[calc(100%-48px)]', // Spans width of core zone
+              'h-8 sm:h-12'
+            )}
           </div>
 
           {/* Main Grid Row */}
@@ -193,7 +199,7 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
               {renderZone('borderline_in', 'Edge', ZONE_TYPES.EDGE, 'w-6 sm:w-8', 'h-48 sm:h-60')}
             </div>
 
-            {/* Core Strike Zone - Made more compact on mobile */}
+            {/* Core Strike Zone */}
             <div className="grid grid-cols-3 gap-px bg-gray-200 p-px">
               {[
                 { loc: 'up_in', label: '1' },
@@ -223,9 +229,15 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
             </div>
           </div>
 
-          {/* Chase Low */}
-          <div className="mt-1">
-            {renderZone('chase_down', 'Low', ZONE_TYPES.CHASE, 'w-16 sm:w-24', 'h-8 sm:h-12')}
+          {/* Chase Low - Now spans full width */}
+          <div className="mt-1 w-full flex justify-center">
+            {renderZone(
+              'chase_down',
+              'Low',
+              ZONE_TYPES.CHASE,
+              'w-[calc(100%-32px)] sm:w-[calc(100%-48px)]', // Spans width of core zone
+              'h-8 sm:h-12'
+            )}
           </div>
         </div>
 
@@ -284,13 +296,12 @@ const BatterAnalysis = ({ batter }) => {
             {Object.entries(batter.zones)
               .filter(([key]) => !key.includes('borderline') && !key.includes('chase'))
               .map(([zone, stats]) => (
-                <div 
-                  key={zone} 
-                  className={`p-2 text-xs rounded ${
-                    parseFloat(stats.avg) > 0.300 
-                      ? 'bg-red-100' 
+                <div
+                  key={zone}
+                  className={`p-2 text-xs rounded ${parseFloat(stats.avg) > 0.300
+                      ? 'bg-red-100'
                       : 'bg-green-100'
-                  }`}
+                    }`}
                 >
                   <div className="font-bold">{zone.replace('_', ' ')}</div>
                   {showExpected ? (
@@ -346,7 +357,7 @@ const PitchSelection = ({ pitcher, onSelect }) => (
 
 const ZoneSelection = ({ batter, onSelect, count }) => (
   <div>
-    <StrikeZoneDisplay 
+    <StrikeZoneDisplay
       batter={batter}
       onSelectZone={onSelect}
       count={count}
@@ -373,7 +384,7 @@ const getRandomVelocity = (pitch, fatigue) => {
     const baseVelo = Number(pitch.baseVelo) - fatigueEffect;
     const range = Number(pitch.range);
     const randomVariation = Math.random() * range;
-    const finalVelocity = baseVelo - (range/2) + randomVariation;
+    const finalVelocity = baseVelo - (range / 2) + randomVariation;
     return String(Number(finalVelocity).toFixed(1));
   } catch (error) {
     console.error('Velocity calculation error:', error);
@@ -386,7 +397,7 @@ const calculateOutcome = (pitch, location, batter, velocity, count) => {
   const battingAvg = parseFloat(zoneStats.avg);
   const slugging = parseFloat(zoneStats.slug);
   const whiffRate = parseInt(zoneStats.whiff) / 100;
-  
+
   const [balls, strikes] = count.split('-').map(Number);
   const isHitterCount = balls > strikes;
   const isPitcherCount = strikes > balls;
@@ -438,8 +449,8 @@ const calculateOutcome = (pitch, location, batter, velocity, count) => {
     if (random <= cumulativeProbability) {
       return {
         ...outcome,
-        description: typeof outcome.description === 'function' 
-          ? outcome.description() 
+        description: typeof outcome.description === 'function'
+          ? outcome.description()
           : outcome.description
       };
     }
@@ -475,9 +486,9 @@ const PitcherTrainingTool = () => {
 
     // Remove this line since it's unused:
     // const strategy = R2K_STRATEGIES[`${gameState.count.balls}-${gameState.count.strikes}`] || R2K_STRATEGIES["0-0"];
-    
+
     const isExpandedZone = zone.includes('chase') || zone.includes('borderline');
-    
+
     if (isExpandedZone) {
       setR2kStats(prev => ({
         ...prev,
@@ -569,7 +580,7 @@ const PitcherTrainingTool = () => {
 
   const handleZoneSelection = (zone) => {
     const pitch = selectedPitcher.pitches[activePitch];
-    const velocity = getRandomVelocity(pitch, 
+    const velocity = getRandomVelocity(pitch,
       (gameState.pitchHistory.length / 100) * 20);
 
     const outcome = calculateOutcome(
@@ -621,8 +632,8 @@ const PitcherTrainingTool = () => {
         <p className="text-sm">Bats: {DODGERS_LINEUP[gameState.currentBatter].bats}</p>
       </div>
 
-      <BatterAnalysis 
-        batter={DODGERS_LINEUP[gameState.currentBatter]} 
+      <BatterAnalysis
+        batter={DODGERS_LINEUP[gameState.currentBatter]}
       />
 
       {lastOutcome && (
