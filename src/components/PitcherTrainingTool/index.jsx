@@ -1,18 +1,9 @@
 import React, { useState } from 'react';
 
-// Add R2K related constants
-const R2K_STRATEGIES = {
-  "0-0": { expansion: "standard", priority: "Get ahead - Aim just off plate edges", r2k_boost: 1.0 },
-  "0-1": { expansion: "aggressive", priority: "Expand zone - Chase opportunity", r2k_boost: 1.2 },
-  "1-0": { expansion: "conservative", priority: "Command primary zone", r2k_boost: 0.8 },
-  "1-1": { expansion: "standard", priority: "Quality strike or chase", r2k_boost: 1.0 },
-  "0-2": { expansion: "maximum", priority: "Maximum zone expansion - Chase", r2k_boost: 1.5 },
-  "2-0": { expansion: "minimal", priority: "Get strike - Minimize damage", r2k_boost: 0.6 },
-  "1-2": { expansion: "aggressive", priority: "Expand zone - Chase opportunity", r2k_boost: 1.3 },
-  "2-1": { expansion: "conservative", priority: "Quality strike location", r2k_boost: 0.8 },
-  "3-0": { expansion: "minimal", priority: "Get strike - Minimize damage", r2k_boost: 0.5 },
-  "3-1": { expansion: "minimal", priority: "Quality strike required", r2k_boost: 0.7 },
-  "3-2": { expansion: "standard", priority: "Competitive pitch - Edge play", r2k_boost: 1.0 }
+const ZONE_TYPES = {
+  HEART: 'heart',
+  EDGE: 'edge',
+  CHASE: 'chase'
 };
 
 const DODGERS_LINEUP = [
@@ -24,11 +15,24 @@ const DODGERS_LINEUP = [
     ops: ".987",
     zones: {
       up_in: { avg: ".389", slug: ".789", whiff: "18%" },
+      up_middle: { avg: ".312", slug: ".534", whiff: "22%" },
       up_away: { avg: ".312", slug: ".534", whiff: "22%" },
       middle_in: { avg: ".405", slug: ".811", whiff: "15%" },
+      middle_middle: { avg: ".298", slug: ".498", whiff: "24%" },
       middle_away: { avg: ".298", slug: ".498", whiff: "24%" },
       down_in: { avg: ".245", slug: ".378", whiff: "28%" },
-      down_away: { avg: ".267", slug: ".401", whiff: "26%" }
+      down_middle: { avg: ".267", slug: ".401", whiff: "26%" },
+      down_away: { avg: ".267", slug: ".401", whiff: "26%" },
+      // Borderline zones
+      borderline_up: { avg: ".280", slug: ".450", whiff: "25%" },
+      borderline_in: { avg: ".275", slug: ".440", whiff: "26%" },
+      borderline_away: { avg: ".270", slug: ".430", whiff: "27%" },
+      borderline_down: { avg: ".265", slug: ".420", whiff: "28%" },
+      // Chase zones
+      chase_up: { avg: ".220", slug: ".380", whiff: "35%" },
+      chase_in: { avg: ".210", slug: ".370", whiff: "36%" },
+      chase_away: { avg: ".200", slug: ".360", whiff: "37%" },
+      chase_down: { avg: ".190", slug: ".350", whiff: "38%" }
     },
     pitchTypes: {
       fastball: ".345",
@@ -45,11 +49,24 @@ const DODGERS_LINEUP = [
     ops: ".976",
     zones: {
       up_in: { avg: ".256", slug: ".423", whiff: "25%" },
+      up_middle: { avg: ".345", slug: ".678", whiff: "19%" },
       up_away: { avg: ".345", slug: ".678", whiff: "19%" },
       middle_in: { avg: ".356", slug: ".689", whiff: "17%" },
+      middle_middle: { avg: ".398", slug: ".745", whiff: "16%" },
       middle_away: { avg: ".398", slug: ".745", whiff: "16%" },
       down_in: { avg: ".312", slug: ".534", whiff: "21%" },
-      down_away: { avg: ".289", slug: ".467", whiff: "23%" }
+      down_middle: { avg: ".289", slug: ".467", whiff: "23%" },
+      down_away: { avg: ".289", slug: ".467", whiff: "23%" },
+      // Borderline zones
+      borderline_up: { avg: ".280", slug: ".450", whiff: "25%" },
+      borderline_in: { avg: ".275", slug: ".440", whiff: "26%" },
+      borderline_away: { avg: ".270", slug: ".430", whiff: "27%" },
+      borderline_down: { avg: ".265", slug: ".420", whiff: "28%" },
+      // Chase zones
+      chase_up: { avg: ".220", slug: ".380", whiff: "35%" },
+      chase_in: { avg: ".210", slug: ".370", whiff: "36%" },
+      chase_away: { avg: ".200", slug: ".360", whiff: "37%" },
+      chase_down: { avg: ".190", slug: ".350", whiff: "38%" }
     },
     pitchTypes: {
       fastball: ".356",
@@ -83,63 +100,140 @@ const PITCHERS = {
   }
 };
 
-const getOutcomeDescription = (type, slugging) => {
-  const descriptions = {
-    WEAK_CONTACT: [
-      "Weak grounder to short",
-      "Soft pop-up to second",
-      "Routine flyout to left",
-      "Slow roller to third",
-      "Easy chopper to first",
-      "Lazy fly ball to center"
-    ],
-    HARD_CONTACT: [
-      "Sharp line drive!",
-      "Deep drive to the wall!",
-      "Hard grounder through the hole!",
-      "Rocket to the gap!",
-      "Screaming liner!",
-      "Crushed to deep center!"
-    ]
-  };
-
-  if (!descriptions[type]) return "";
-
-  if (type === "HARD_CONTACT" && Math.random() < slugging - 0.3) {
-    const directions = ["left", "center", "right"];
-    return `HOME RUN! Ball crushed to deep ${directions[Math.floor(Math.random() * 3)]}!`;
-  }
-
-  return descriptions[type][Math.floor(Math.random() * descriptions[type].length)];
+const R2K_STRATEGIES = {
+  "0-0": { expansion: "standard", priority: "Get ahead - Aim just off plate edges", r2k_boost: 1.0 },
+  "0-1": { expansion: "aggressive", priority: "Expand zone - Chase opportunity", r2k_boost: 1.2 },
+  "1-0": { expansion: "conservative", priority: "Command primary zone", r2k_boost: 0.8 },
+  "0-2": { expansion: "maximum", priority: "Maximum zone expansion - Chase", r2k_boost: 1.5 },
+  "2-0": { expansion: "minimal", priority: "Get strike - Minimize damage", r2k_boost: 0.6 },
+  "1-1": { expansion: "standard", priority: "Quality strike or chase", r2k_boost: 1.0 },
+  "1-2": { expansion: "aggressive", priority: "Expand zone - Chase opportunity", r2k_boost: 1.3 },
+  "2-1": { expansion: "conservative", priority: "Quality strike location", r2k_boost: 0.8 },
+  "2-2": { expansion: "standard", priority: "Competitive pitch - Edge play", r2k_boost: 1.0 },
+  "3-0": { expansion: "minimal", priority: "Get strike - Minimize damage", r2k_boost: 0.5 },
+  "3-1": { expansion: "minimal", priority: "Quality strike required", r2k_boost: 0.7 },
+  "3-2": { expansion: "standard", priority: "Competitive pitch - Edge play", r2k_boost: 1.0 }
 };
 
-const R2KDisplay = ({ count, batter }) => {
-  const countString = `${count.balls}-${count.strikes}`;
-  const strategy = R2K_STRATEGIES[countString] || R2K_STRATEGIES["0-0"];
-  
-  return (
-    <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-blue-200">
-      <h3 className="font-bold text-lg mb-2">R2K Strategy</h3>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="font-semibold">Count Leverage:</p>
-          <p className="text-sm">{strategy.priority}</p>
-          <p className="mt-2 font-semibold">Zone Approach:</p>
-          <p className="text-sm capitalize">{strategy.expansion} expansion</p>
-        </div>
-        <div>
-          <p className="font-semibold">R2K Impact:</p>
-          <div className="flex items-center gap-2">
-            <div className={`h-2 w-full rounded-full bg-gradient-to-r ${
-              strategy.r2k_boost >= 1.2 ? 'from-green-500 to-green-300' :
-              strategy.r2k_boost >= 1.0 ? 'from-blue-500 to-blue-300' :
-              'from-yellow-500 to-yellow-300'
-            }`}></div>
-            <span className="text-sm">{(strategy.r2k_boost * 100).toFixed(0)}%</span>
+const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
+  const getZoneStyle = (zoneType, stats) => {
+    switch (zoneType) {
+      case ZONE_TYPES.HEART:
+        return parseFloat(stats.avg) > 0.300 
+          ? 'bg-red-100 hover:bg-red-200' 
+          : 'bg-green-100 hover:bg-green-200';
+      case ZONE_TYPES.EDGE:
+        return 'bg-yellow-100 hover:bg-yellow-200';
+      case ZONE_TYPES.CHASE:
+        return 'bg-blue-100 hover:bg-blue-200';
+      default:
+        return '';
+    }
+  };
+
+  const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
+
+  const renderZone = (location, label, type) => {
+    const stats = batter.zones[location] || { avg: ".000", slug: ".000", whiff: "0%" };
+    const isRecommended = (
+      (strategy.r2k_boost > 1.2 && type === ZONE_TYPES.CHASE) ||
+      (strategy.r2k_boost > 1 && type === ZONE_TYPES.EDGE)
+    );
+
+    return (
+      <button
+        onClick={() => onSelectZone(location)}
+        className={`
+          w-full h-full p-2 rounded relative transition
+          ${getZoneStyle(type, stats)}
+          ${isRecommended ? 'border-2 border-blue-400' : ''}
+        `}
+      >
+        <div className="text-xs font-bold">{label}</div>
+        <div className="text-xs">AVG: {stats.avg}</div>
+        {isRecommended && (
+          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+            R2K+
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            {strategy.r2k_boost > 1 ? 'High' : strategy.r2k_boost === 1 ? 'Normal' : 'Limited'} R2K opportunity
-          </p>
+        )}
+      </button>
+    );
+  };
+
+  return (
+    <div className="w-full max-w-2xl mx-auto p-4">
+      {/* Strike Zone Grid */}
+      <div className="relative border-2 border-gray-400 p-1">
+        {/* Top Row - Chase/Borderline */}
+        <div className="grid grid-cols-3 gap-1 mb-1">
+          <div></div>
+          {renderZone('chase_up', 'Chase High', ZONE_TYPES.CHASE)}
+          <div></div>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-5 gap-1">
+          {/* Left Column - Chase/Borderline */}
+          <div className="flex flex-col justify-center">
+            {renderZone('chase_in', 'Chase In', ZONE_TYPES.CHASE)}
+          </div>
+          <div className="flex flex-col justify-center">
+            {renderZone('borderline_in', 'Border In', ZONE_TYPES.EDGE)}
+          </div>
+
+          {/* Center 3x3 Grid */}
+          <div className="grid grid-cols-3 gap-1">
+            {[
+              { loc: 'up_in', label: 'High In' },
+              { loc: 'up_middle', label: 'High Mid' },
+              { loc: 'up_away', label: 'High Away' },
+              { loc: 'middle_in', label: 'Mid In' },
+              { loc: 'middle_middle', label: 'Middle' },
+              { loc: 'middle_away', label: 'Mid Away' },
+              { loc: 'down_in', label: 'Low In' },
+              { loc: 'down_middle', label: 'Low Mid' },
+              { loc: 'down_away', label: 'Low Away' }
+            ].map((zone, idx) => (
+              <div key={idx} className="aspect-square">
+                {renderZone(zone.loc, zone.label, ZONE_TYPES.HEART)}
+              </div>
+            ))}
+          </div>
+
+          {/* Right Column - Chase/Borderline */}
+          <div className="flex flex-col justify-center">
+            {renderZone('borderline_away', 'Border Out', ZONE_TYPES.EDGE)}
+          </div>
+          <div className="flex flex-col justify-center">
+            {renderZone('chase_away', 'Chase Out', ZONE_TYPES.CHASE)}
+          </div>
+        </div>
+
+        {/* Bottom Row - Chase/Borderline */}
+        <div className="grid grid-cols-3 gap-1 mt-1">
+          <div></div>
+          {renderZone('chase_down', 'Chase Low', ZONE_TYPES.CHASE)}
+          <div></div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 flex justify-center gap-4 text-xs">
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-green-100 rounded"></div>
+          <span>Strike</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-yellow-100 rounded"></div>
+          <span>Border</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-blue-100 rounded"></div>
+          <span>Chase</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-red-100 rounded"></div>
+          <span>Hot Zone</span>
         </div>
       </div>
     </div>
@@ -170,26 +264,28 @@ const BatterAnalysis = ({ batter }) => {
             </button>
           </div>
           <div className="grid grid-cols-3 gap-1">
-            {Object.entries(batter.zones).map(([zone, stats]) => (
-              <div 
-                key={zone} 
-                className={`p-2 text-xs rounded ${
-                  parseFloat(stats.avg) > 0.300 
-                    ? 'bg-red-100' 
-                    : 'bg-green-100'
-                }`}
-              >
-                <div className="font-bold">{zone.replace('_', ' ')}</div>
-                {showExpected ? (
-                  <>
-                    <div>SLG: {stats.slug}</div>
-                    <div>Whiff: {stats.whiff}</div>
-                  </>
-                ) : (
-                  <div>AVG: {stats.avg}</div>
-                )}
-              </div>
-            ))}
+            {Object.entries(batter.zones)
+              .filter(([key]) => !key.includes('borderline') && !key.includes('chase'))
+              .map(([zone, stats]) => (
+                <div 
+                  key={zone} 
+                  className={`p-2 text-xs rounded ${
+                    parseFloat(stats.avg) > 0.300 
+                      ? 'bg-red-100' 
+                      : 'bg-green-100'
+                  }`}
+                >
+                  <div className="font-bold">{zone.replace('_', ' ')}</div>
+                  {showExpected ? (
+                    <>
+                      <div>SLG: {stats.slug}</div>
+                      <div>Whiff: {stats.whiff}</div>
+                    </>
+                  ) : (
+                    <div>AVG: {stats.avg}</div>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -215,7 +311,6 @@ const BatterAnalysis = ({ batter }) => {
     </div>
   );
 };
-
 const PitchSelection = ({ pitcher, onSelect }) => (
   <div className="grid grid-cols-2 gap-2 mb-4">
     {Object.entries(pitcher.pitches).map(([key, pitch]) => (
@@ -232,47 +327,15 @@ const PitchSelection = ({ pitcher, onSelect }) => (
   </div>
 );
 
-const ZoneSelection = ({ batter, onSelect, count }) => {
-  const countString = `${count.balls}-${count.strikes}`;
-  const strategy = R2K_STRATEGIES[countString] || R2K_STRATEGIES["0-0"];
-  
-  return (
-    <div>
-      <div className="grid grid-cols-3 gap-1 mb-4">
-        {Object.entries(batter.zones).map(([zone, stats]) => {
-          const isExpandedZone = !zone.includes('middle') && strategy.r2k_boost > 1;
-          
-          return (
-            <button
-              key={zone}
-              onClick={() => onSelect(zone)}
-              className={`p-2 rounded transition relative ${
-                isExpandedZone 
-                  ? `bg-green-50 hover:bg-green-100 border-2 border-blue-400`
-                  : parseFloat(stats.avg) > 0.300 
-                    ? 'bg-red-100 hover:bg-red-200'
-                    : 'bg-green-100 hover:bg-green-200'
-              }`}
-            >
-              <div className="font-bold text-sm">{zone.replace('_', ' ').toUpperCase()}</div>
-              <div className="text-xs">AVG: {stats.avg}</div>
-              {isExpandedZone && (
-                <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-                  R2K+
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      <div className="text-sm text-gray-600 mt-2">
-        {strategy.r2k_boost > 1 && (
-          <p>💡 Expanded zones highlighted for R2K optimization</p>
-        )}
-      </div>
-    </div>
-  );
-};
+const ZoneSelection = ({ batter, onSelect, count }) => (
+  <div>
+    <StrikeZoneDisplay 
+      batter={batter}
+      onSelectZone={onSelect}
+      count={count}
+    />
+  </div>
+);
 
 const PitchHistory = ({ history }) => (
   <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -287,6 +350,20 @@ const PitchHistory = ({ history }) => (
   </div>
 );
 
+const getRandomVelocity = (pitch, fatigue) => {
+  try {
+    const fatigueEffect = Number((fatigue / 100) * 2);
+    const baseVelo = Number(pitch.baseVelo) - fatigueEffect;
+    const range = Number(pitch.range);
+    const randomVariation = Math.random() * range;
+    const finalVelocity = baseVelo - (range/2) + randomVariation;
+    return String(Number(finalVelocity).toFixed(1));
+  } catch (error) {
+    console.error('Velocity calculation error:', error);
+    return String(pitch.baseVelo);
+  }
+};
+
 const calculateOutcome = (pitch, location, batter, velocity, count) => {
   const zoneStats = batter.zones[location];
   const battingAvg = parseFloat(zoneStats.avg);
@@ -297,30 +374,38 @@ const calculateOutcome = (pitch, location, batter, velocity, count) => {
   const isHitterCount = balls > strikes;
   const isPitcherCount = strikes > balls;
 
+  const isChaseZone = location.includes('chase');
+  const isBorderlineZone = location.includes('borderline');
+
   let outcomes = [
     {
       type: "SWING_MISS",
-      probability: whiffRate * (isPitcherCount ? 1.2 : 1),
+      probability: whiffRate * (isPitcherCount ? 1.2 : 1) * (isChaseZone ? 1.5 : 1),
       description: "Swing and miss!"
     },
     {
       type: "FOUL",
-      probability: 0.15 * (strikes === 2 ? 1.5 : 1),
+      probability: 0.15 * (strikes === 2 ? 1.5 : 1) * (isBorderlineZone ? 1.3 : 1),
       description: "Foul ball"
     },
     {
       type: "WEAK_CONTACT",
-      probability: (1 - battingAvg) * 0.4,
-      description: () => getOutcomeDescription("WEAK_CONTACT")
+      probability: (1 - battingAvg) * 0.4 * (isChaseZone ? 1.4 : 1),
+      description: `Weak ${['grounder to short', 'pop-up to second', 'fly ball to left', 'chopper to third'][Math.floor(Math.random() * 4)]}`
     },
     {
       type: "HARD_CONTACT",
-      probability: slugging * 0.3,
-      description: () => getOutcomeDescription("HARD_CONTACT", slugging)
+      probability: slugging * 0.3 * (isChaseZone ? 0.5 : isBorderlineZone ? 0.8 : 1),
+      description: () => {
+        if (Math.random() < slugging - 0.3 && !isChaseZone) {
+          return "HOME RUN! Ball crushed to deep " + ['left', 'center', 'right'][Math.floor(Math.random() * 3)] + "!";
+        }
+        return `Hard ${['line drive', 'ground ball', 'fly ball'][Math.floor(Math.random() * 3)]}!`;
+      }
     },
     {
       type: "TAKE",
-      probability: isHitterCount ? 0.3 : 0.1,
+      probability: (isChaseZone ? 0.4 : isBorderlineZone ? 0.2 : 0.1) * (isHitterCount ? 1.3 : 1),
       description: "Takes the pitch"
     }
   ];
@@ -344,20 +429,6 @@ const calculateOutcome = (pitch, location, batter, velocity, count) => {
   }
 
   return outcomes[0];
-};
-
-const getRandomVelocity = (pitch, fatigue) => {
-  try {
-    const fatigueEffect = Number((fatigue / 100) * 2);
-    const baseVelo = Number(pitch.baseVelo) - fatigueEffect;
-    const range = Number(pitch.range);
-    const randomVariation = Math.random() * range;
-    const finalVelocity = baseVelo - (range/2) + randomVariation;
-    return String(Number(finalVelocity).toFixed(1));
-  } catch (error) {
-    console.error('Velocity calculation error:', error);
-    return String(pitch.baseVelo);
-  }
 };
 
 const PitcherTrainingTool = () => {
@@ -385,9 +456,8 @@ const PitcherTrainingTool = () => {
     let newCurrentBatter = gameState.currentBatter;
     let resultDescription = outcome.description;
 
-    // Update R2K stats if using expanded zone
     const strategy = R2K_STRATEGIES[`${gameState.count.balls}-${gameState.count.strikes}`] || R2K_STRATEGIES["0-0"];
-    const isExpandedZone = !zone.includes('middle') && strategy.r2k_boost > 1;
+    const isExpandedZone = zone.includes('chase') || zone.includes('borderline');
     
     if (isExpandedZone) {
       setR2kStats(prev => ({
@@ -406,7 +476,7 @@ const PitcherTrainingTool = () => {
         if (newCount.strikes < 2) newCount.strikes++;
         break;
       case 'TAKE':
-        if (zone.includes('middle')) {
+        if (!zone.includes('chase') && !zone.includes('borderline')) {
           newCount.strikes++;
           resultDescription += " - Strike!";
         } else {
@@ -531,11 +601,6 @@ const PitcherTrainingTool = () => {
         <p>{DODGERS_LINEUP[gameState.currentBatter].name} ({DODGERS_LINEUP[gameState.currentBatter].avg})</p>
         <p className="text-sm">Bats: {DODGERS_LINEUP[gameState.currentBatter].bats}</p>
       </div>
-
-      <R2KDisplay 
-        count={gameState.count}
-        batter={DODGERS_LINEUP[gameState.currentBatter]}
-      />
 
       <BatterAnalysis 
         batter={DODGERS_LINEUP[gameState.currentBatter]} 
