@@ -116,25 +116,32 @@ const R2K_STRATEGIES = {
 };
 
 const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
-  const getZoneStyle = (zoneType, stats) => {
-    switch (zoneType) {
-      case ZONE_TYPES.HEART:
-        return parseFloat(stats.avg) > 0.300 
-          ? 'bg-white border border-red-300' 
-          : 'bg-white border border-gray-300';
-      case ZONE_TYPES.EDGE:
-        return 'bg-yellow-50 border border-yellow-200';
-      case ZONE_TYPES.CHASE:
-        return 'bg-blue-50 border border-blue-200';
-      default:
-        return '';
-    }
+  const currentStrategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
+
+  const getZoneStyle = (zoneType, stats, location) => {
+    // Base style based on zone type
+    const baseStyle = {
+      [ZONE_TYPES.HEART]: parseFloat(stats.avg) > 0.300 
+        ? 'bg-white border border-red-300' 
+        : 'bg-white border border-gray-300',
+      [ZONE_TYPES.EDGE]: 'bg-yellow-50 border border-yellow-200',
+      [ZONE_TYPES.CHASE]: 'bg-blue-50 border border-blue-200'
+    }[zoneType];
+
+    // Add R2K highlight based on strategy
+    const isExpandedZone = (zoneType === ZONE_TYPES.CHASE && currentStrategy.r2k_boost > 1.2) ||
+                          (zoneType === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
+
+    return `${baseStyle} ${isExpandedZone ? 'border-2 border-blue-400' : ''}`;
   };
+
 
   // const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
 
   const renderZone = (location, label, type, width = 'w-24', height = 'h-20') => {
     const stats = batter.zones[location] || { avg: ".000" };
+    const isOptimalZone = (type === ZONE_TYPES.CHASE && currentStrategy.r2k_boost > 1.2) ||
+                         (type === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
     
     return (
       <button
@@ -142,19 +149,36 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
         className={`
           ${width} ${height} p-1 rounded relative transition
           hover:bg-opacity-80 flex flex-col justify-center items-center
-          ${getZoneStyle(type, stats)}
+          ${getZoneStyle(type, stats, location)}
         `}
       >
         <div className="text-xs font-bold">{label}</div>
         <div className="text-xs">AVG: {stats.avg}</div>
+        {isOptimalZone && (
+          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+            R2K+
+          </div>
+        )}
+        {currentStrategy.r2k_boost > 1.0 && type !== ZONE_TYPES.HEART && (
+          <div className="absolute bottom-0 left-0 right-0 text-xs text-center text-blue-600 bg-blue-50 bg-opacity-75">
+            {currentStrategy.priority}
+          </div>
+        )}
       </button>
     );
   };
 
 
+
   return (
     <div className="w-full max-w-3xl mx-auto p-4">
       <div className="relative flex flex-col items-center">
+        {/* Strategy Display */}
+        <div className="mb-4 p-2 bg-blue-50 rounded w-full text-center">
+          <p className="font-bold text-sm">R2K Strategy: {currentStrategy.expansion}</p>
+          <p className="text-xs text-gray-600">{currentStrategy.priority}</p>
+        </div>
+
         {/* Chase High */}
         <div className="mb-1">
           {renderZone('chase_up', 'Chase High', ZONE_TYPES.CHASE, 'w-24', 'h-12')}
@@ -221,11 +245,18 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
             <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div>
             <span>Chase</span>
           </div>
+          {currentStrategy.r2k_boost > 1.0 && (
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 border-2 border-blue-400 rounded"></div>
+              <span>R2K Target</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
 
 
 const BatterAnalysis = ({ batter }) => {
