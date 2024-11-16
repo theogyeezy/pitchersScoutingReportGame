@@ -138,7 +138,7 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
 
   // const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
 
-  const renderZone = (location, label, type, width = 'w-24', height = 'h-20') => {
+  const renderZone = (location, label, type, width = 'w-16 sm:w-24', height = 'h-16 sm:h-20') => {
     const stats = batter.zones[location] || { avg: ".000" };
     const isOptimalZone = (type === ZONE_TYPES.CHASE && currentStrategy.r2k_boost > 1.2) ||
                          (type === ZONE_TYPES.EDGE && currentStrategy.r2k_boost > 1.0);
@@ -152,26 +152,21 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
           ${getZoneStyle(type, stats, location)}
         `}
       >
-        <div className="text-xs font-bold">{label}</div>
-        <div className="text-xs">AVG: {stats.avg}</div>
+        <div className="text-[10px] sm:text-xs font-bold">{label}</div>
+        <div className="text-[10px] sm:text-xs">{stats.avg}</div>
         {isOptimalZone && (
-          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-            R2K+
-          </div>
-        )}
-        {currentStrategy.r2k_boost > 1.0 && type !== ZONE_TYPES.HEART && (
-          <div className="absolute bottom-0 left-0 right-0 text-xs text-center text-blue-600 bg-blue-50 bg-opacity-75">
-            {currentStrategy.priority}
+          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] sm:text-xs px-1 rounded">
+            R2K
           </div>
         )}
       </button>
     );
   };
-
+  
 
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4">
+    <div className="w-full max-w-full sm:max-w-3xl mx-auto p-2 sm:p-4">
       <div className="relative flex flex-col items-center">
         {/* Strategy Display */}
         <div className="mb-4 p-2 bg-blue-50 rounded w-full text-center">
@@ -179,76 +174,79 @@ const StrikeZoneDisplay = ({ onSelectZone, batter, count }) => {
           <p className="text-xs text-gray-600">{currentStrategy.priority}</p>
         </div>
 
-        {/* Chase High */}
-        <div className="mb-1">
-          {renderZone('chase_up', 'Chase High', ZONE_TYPES.CHASE, 'w-24', 'h-12')}
+        {/* Mobile-Optimized Strike Zone */}
+        <div className="scale-[0.85] sm:scale-100 transform-gpu origin-top">
+          {/* Chase High */}
+          <div className="mb-1">
+            {renderZone('chase_up', 'High', ZONE_TYPES.CHASE, 'w-16 sm:w-24', 'h-8 sm:h-12')}
+          </div>
+
+          {/* Main Grid Row */}
+          <div className="flex justify-center items-center">
+            {/* Chase Inside */}
+            <div className="mr-1">
+              {renderZone('chase_in', 'In', ZONE_TYPES.CHASE, 'w-8 sm:w-12', 'h-48 sm:h-60')}
+            </div>
+
+            {/* Border Inside */}
+            <div className="mr-1">
+              {renderZone('borderline_in', 'Edge', ZONE_TYPES.EDGE, 'w-6 sm:w-8', 'h-48 sm:h-60')}
+            </div>
+
+            {/* Core Strike Zone - Made more compact on mobile */}
+            <div className="grid grid-cols-3 gap-px bg-gray-200 p-px">
+              {[
+                { loc: 'up_in', label: '1' },
+                { loc: 'up_middle', label: '2' },
+                { loc: 'up_away', label: '3' },
+                { loc: 'middle_in', label: '4' },
+                { loc: 'middle_middle', label: '5' },
+                { loc: 'middle_away', label: '6' },
+                { loc: 'down_in', label: '7' },
+                { loc: 'down_middle', label: '8' },
+                { loc: 'down_away', label: '9' }
+              ].map((zone, idx) => (
+                <div key={idx} className="w-16 sm:w-24 h-16 sm:h-20">
+                  {renderZone(zone.loc, zone.label, ZONE_TYPES.HEART)}
+                </div>
+              ))}
+            </div>
+
+            {/* Border Outside */}
+            <div className="ml-1">
+              {renderZone('borderline_away', 'Edge', ZONE_TYPES.EDGE, 'w-6 sm:w-8', 'h-48 sm:h-60')}
+            </div>
+
+            {/* Chase Outside */}
+            <div className="ml-1">
+              {renderZone('chase_away', 'Out', ZONE_TYPES.CHASE, 'w-8 sm:w-12', 'h-48 sm:h-60')}
+            </div>
+          </div>
+
+          {/* Chase Low */}
+          <div className="mt-1">
+            {renderZone('chase_down', 'Low', ZONE_TYPES.CHASE, 'w-16 sm:w-24', 'h-8 sm:h-12')}
+          </div>
         </div>
 
-        {/* Main Grid Row */}
-        <div className="flex justify-center items-center">
-          {/* Chase Inside */}
-          <div className="mr-1">
-            {renderZone('chase_in', 'Chase In', ZONE_TYPES.CHASE, 'w-12', 'h-60')}
-          </div>
-
-          {/* Border Inside */}
-          <div className="mr-1">
-            {renderZone('borderline_in', 'Border In', ZONE_TYPES.EDGE, 'w-8', 'h-60')}
-          </div>
-
-          {/* Core Strike Zone */}
-          <div className="grid grid-cols-3 gap-px bg-gray-200 p-px">
-            {[
-              { loc: 'up_in', label: 'High In' },
-              { loc: 'up_middle', label: 'High Mid' },
-              { loc: 'up_away', label: 'High Away' },
-              { loc: 'middle_in', label: 'Mid In' },
-              { loc: 'middle_middle', label: 'Middle' },
-              { loc: 'middle_away', label: 'Mid Away' },
-              { loc: 'down_in', label: 'Low In' },
-              { loc: 'down_middle', label: 'Low Mid' },
-              { loc: 'down_away', label: 'Low Away' }
-            ].map((zone, idx) => (
-              <div key={idx} className="w-24 h-20">
-                {renderZone(zone.loc, zone.label, ZONE_TYPES.HEART)}
-              </div>
-            ))}
-          </div>
-
-          {/* Border Outside */}
-          <div className="ml-1">
-            {renderZone('borderline_away', 'Border Out', ZONE_TYPES.EDGE, 'w-8', 'h-60')}
-          </div>
-
-          {/* Chase Outside */}
-          <div className="ml-1">
-            {renderZone('chase_away', 'Chase Out', ZONE_TYPES.CHASE, 'w-12', 'h-60')}
-          </div>
-        </div>
-
-        {/* Chase Low */}
-        <div className="mt-1">
-          {renderZone('chase_down', 'Chase Low', ZONE_TYPES.CHASE, 'w-24', 'h-12')}
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 flex justify-center gap-4 text-xs">
+        {/* Mobile-Optimized Legend */}
+        <div className="mt-4 flex flex-wrap justify-center gap-2 sm:gap-4 text-[10px] sm:text-xs">
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
-            <span>Strike Zone</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white border border-gray-300 rounded"></div>
+            <span>Strike</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
-            <span>Borderline</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
+            <span>Border</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-50 border border-blue-200 rounded"></div>
             <span>Chase</span>
           </div>
           {currentStrategy.r2k_boost > 1.0 && (
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 border-2 border-blue-400 rounded"></div>
-              <span>R2K Target</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-400 rounded"></div>
+              <span>R2K</span>
             </div>
           )}
         </div>
