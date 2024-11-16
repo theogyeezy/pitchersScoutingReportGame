@@ -456,7 +456,9 @@ const PitcherTrainingTool = () => {
     let newCurrentBatter = gameState.currentBatter;
     let resultDescription = outcome.description;
 
-    const strategy = R2K_STRATEGIES[`${gameState.count.balls}-${gameState.count.strikes}`] || R2K_STRATEGIES["0-0"];
+    // Remove this line since it's unused:
+    // const strategy = R2K_STRATEGIES[`${gameState.count.balls}-${gameState.count.strikes}`] || R2K_STRATEGIES["0-0"];
+    
     const isExpandedZone = zone.includes('chase') || zone.includes('borderline');
     
     if (isExpandedZone) {
