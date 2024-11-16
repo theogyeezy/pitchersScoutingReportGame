@@ -1,5 +1,71 @@
 import React, { useState } from 'react';
 
+// Add R2K related constants
+const R2K_THRESHOLDS = {
+  ahead_count: { zone_expansion: 1.2, success_rate: 0.85 },
+  even_count: { zone_expansion: 1.0, success_rate: 0.75 },
+  behind_count: { zone_expansion: 0.8, success_rate: 0.65 }
+};
+
+const R2K_STRATEGIES = {
+  "0-0": {
+    expansion: "standard",
+    priority: "Get ahead - Aim just off plate edges",
+    r2k_boost: 1.0
+  },
+  "0-1": {
+    expansion: "aggressive",
+    priority: "Expand zone - Chase opportunity",
+    r2k_boost: 1.2
+  },
+  "1-0": {
+    expansion: "conservative",
+    priority: "Command primary zone",
+    r2k_boost: 0.8
+  },
+  "1-1": {
+    expansion: "standard",
+    priority: "Quality strike or chase",
+    r2k_boost: 1.0
+  },
+  "0-2": {
+    expansion: "maximum",
+    priority: "Maximum zone expansion - Chase",
+    r2k_boost: 1.5
+  },
+  "2-0": {
+    expansion: "minimal",
+    priority: "Get strike - Minimize damage",
+    r2k_boost: 0.6
+  },
+  "2-1": {
+    expansion: "conservative",
+    priority: "Quality strike location",
+    r2k_boost: 0.8
+  },
+  "1-2": {
+    expansion: "aggressive",
+    priority: "Expand zone - Chase opportunity",
+    r2k_boost: 1.3
+  },
+  "3-0": {
+    expansion: "minimal",
+    priority: "Get strike - Minimize damage",
+    r2k_boost: 0.5
+  },
+  "3-1": {
+    expansion: "minimal",
+    priority: "Quality strike required",
+    r2k_boost: 0.7
+  },
+  "3-2": {
+    expansion: "standard",
+    priority: "Competitive pitch - Edge play",
+    r2k_boost: 1.0
+  }
+};
+
+
 const DODGERS_LINEUP = [
   {
     name: "Mookie Betts",
@@ -44,6 +110,81 @@ const DODGERS_LINEUP = [
     notes: "- Excellent plate coverage\n- Struggles with changeups from RHP\n- Rarely chases out of zone\n- Better against velocity than breaking balls"
   }
 ];
+
+const R2KDisplay = ({ count, batter }) => {
+  const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
+  const zoneStats = batter.zones;
+  
+  return (
+    <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-blue-200">
+      <h3 className="font-bold text-lg mb-2">R2K Strategy</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="font-semibold">Count Leverage:</p>
+          <p className="text-sm">{strategy.priority}</p>
+          <p className="mt-2 font-semibold">Zone Approach:</p>
+          <p className="text-sm capitalize">{strategy.expansion} expansion</p>
+        </div>
+        <div>
+          <p className="font-semibold">R2K Impact:</p>
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-full rounded-full bg-gradient-to-r ${
+              strategy.r2k_boost >= 1.2 ? 'from-green-500 to-green-300' :
+              strategy.r2k_boost >= 1.0 ? 'from-blue-500 to-blue-300' :
+              'from-yellow-500 to-yellow-300'
+            }`}></div>
+            <span className="text-sm">{(strategy.r2k_boost * 100).toFixed(0)}%</span>
+          </div>
+          <p className="mt-2 text-sm text-gray-600">
+            {strategy.r2k_boost > 1 ? 'High' : strategy.r2k_boost === 1 ? 'Normal' : 'Limited'} R2K opportunity
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ZoneSelection = ({ batter, onSelect, count }) => {
+  const strategy = R2K_STRATEGIES[`${count.balls}-${count.strikes}`] || R2K_STRATEGIES["0-0"];
+  
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-1 mb-4">
+        {Object.entries(batter.zones).map(([zone, stats]) => {
+          const isExpandedZone = !zone.includes('middle') && strategy.r2k_boost > 1;
+          const baseColor = parseFloat(stats.avg) > 0.300 ? 'red' : 'green';
+          
+          return (
+            <button
+              key={zone}
+              onClick={() => onSelect(zone)}
+              className={`p-2 rounded transition relative ${
+                isExpandedZone 
+                  ? `bg-${baseColor}-50 hover:bg-${baseColor}-100 border-2 border-blue-400`
+                  : `bg-${baseColor}-100 hover:bg-${baseColor}-200`
+              }`}
+            >
+              <div className="font-bold text-sm">{zone.replace('_', ' ').toUpperCase()}</div>
+              <div className="text-xs">AVG: {stats.avg}</div>
+              {isExpandedZone && (
+                <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                  R2K+
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-sm text-gray-600 mt-2">
+        {strategy.r2k_boost > 1 && (
+          <p>💡 Expanded zones highlighted for R2K optimization</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 
 const PITCHERS = {
   "Jordan Geber": {
@@ -299,6 +440,14 @@ const PitcherTrainingTool = () => {
     pitchHistory: []
   });
 
+  const [r2kStats, setR2kStats] = useState({
+    opportunities: 0,
+    successful: 0,
+    expanded_zones: 0
+  });
+
+
+
   const [selectedPitcher, setSelectedPitcher] = useState(null);
   const [activePitch, setActivePitch] = useState(null);
   const [lastOutcome, setLastOutcome] = useState(null);
@@ -394,6 +543,9 @@ const PitcherTrainingTool = () => {
     const velocity = getRandomVelocity(pitch, 
       (gameState.pitchHistory.length / 100) * 20);
 
+    const strategy = R2K_STRATEGIES[`${gameState.count.balls}-${gameState.count.strikes}`] || R2K_STRATEGIES["0-0"];
+    const isExpandedZone = !zone.includes('middle') && strategy.r2k_boost > 1;
+
     const outcome = calculateOutcome(
       activePitch,
       zone,
@@ -401,6 +553,21 @@ const PitcherTrainingTool = () => {
       velocity,
       `${gameState.count.balls}-${gameState.count.strikes}`
     );
+
+    if (isExpandedZone) {
+      setR2kStats(prev => ({
+        ...prev,
+        opportunities: prev.opportunities + 1,
+        successful: prev.successful + (outcome.type === 'SWING_MISS' || outcome.type === 'WEAK_CONTACT' ? 1 : 0),
+        expanded_zones: prev.expanded_zones + 1
+      }));
+    }
+
+    const resultDescription = updateGameState(outcome, zone, pitch, velocity);
+    setLastOutcome(resultDescription);
+    setActivePitch(null);
+  };
+
 
     const resultDescription = updateGameState(outcome, zone, pitch, velocity);
     setLastOutcome(resultDescription);
@@ -443,6 +610,11 @@ const PitcherTrainingTool = () => {
         <p className="text-sm">Bats: {DODGERS_LINEUP[gameState.currentBatter].bats}</p>
       </div>
 
+      <R2KDisplay 
+        count={gameState.count}
+        batter={DODGERS_LINEUP[gameState.currentBatter]}
+      />
+
       <BatterAnalysis 
         batter={DODGERS_LINEUP[gameState.currentBatter]} 
       />
@@ -462,15 +634,35 @@ const PitcherTrainingTool = () => {
         <ZoneSelection
           batter={DODGERS_LINEUP[gameState.currentBatter]}
           onSelect={handleZoneSelection}
+          count={gameState.count}
         />
       )}
 
       {gameState.pitchHistory.length > 0 && (
         <PitchHistory history={gameState.pitchHistory} />
       )}
+
+      {r2kStats.opportunities > 0 && (
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <h3 className="font-bold mb-2">R2K Performance</h3>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="font-semibold">Success Rate</p>
+              <p>{((r2kStats.successful / r2kStats.opportunities) * 100).toFixed(1)}%</p>
+            </div>
+            <div>
+              <p className="font-semibold">Expanded Zones</p>
+              <p>{r2kStats.expanded_zones}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Opportunities</p>
+              <p>{r2kStats.opportunities}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
 
 export default PitcherTrainingTool;
     
