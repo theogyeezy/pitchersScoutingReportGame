@@ -1048,6 +1048,27 @@ const PitcherTrainingTool = () => {
     }
   });
 
+  const handlePitchSelection = (pitchKey) => {
+    setActivePitch(pitchKey);
+  };
+
+  const handleZoneSelection = (zone) => {
+    const pitch = selectedPitcher.pitches[activePitch];
+    const velocity = getRandomVelocity(pitch, 
+      (gameState.pitchHistory.length / 100) * 20);
+
+      activePitch,
+      zone,
+      SEADOGS_LINEUP[gameState.currentBatter],
+      velocity,
+      `${gameState.count.balls}-${gameState.count.strikes}`
+    );
+
+    const resultDescription = updateGameState(outcome, zone, pitch, velocity);
+    setLastOutcome(resultDescription);
+    setActivePitch(null);
+  };
+
   const [selectedPitcher, setSelectedPitcher] = useState(null);
   const [activePitch, setActivePitch] = useState(null);
   const [lastOutcome, setLastOutcome] = useState(null);
