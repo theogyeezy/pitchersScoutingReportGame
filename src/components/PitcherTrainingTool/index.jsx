@@ -490,28 +490,28 @@ const SEADOGS_LINEUP = [
 ];
 
 
-const PITCHERS = {
-  "Jordan Geber": {
-    name: "Jordan Geber",
-    level: "AAA Syracuse Mets",
-    pitches: {
-      FASTBALL: { name: "4-Seam Fastball", baseVelo: 93, range: 2, description: "Rising action" },
-      SINKER: { name: "Sinker", baseVelo: 92, range: 2, description: "Heavy downward movement" },
-      SLIDER: { name: "Slider", baseVelo: 83, range: 3, description: "Sharp late break" },
-      CHANGEUP: { name: "Changeup", baseVelo: 84, range: 2, description: "Good fade" }
-    }
-  },
-  "Cam Robinson": {
-    name: "Cam Robinson",
-    level: "AA Binghamton Rumble Ponies",
-    pitches: {
-      FASTBALL: { name: "4-Seam Fastball", baseVelo: 95, range: 2, description: "Power pitch with ride" },
-      CURVEBALL: { name: "Curveball", baseVelo: 78, range: 3, description: "12-6 break" },
-      SLIDER: { name: "Slider", baseVelo: 85, range: 3, description: "Tight spin" },
-      CUTTER: { name: "Cutter", baseVelo: 90, range: 2, description: "Late movement" }
-    }
-  }
-};
+// const PITCHERS = {
+//   "Jordan Geber": {
+//     name: "Jordan Geber",
+//     level: "AAA Syracuse Mets",
+//     pitches: {
+//       FASTBALL: { name: "4-Seam Fastball", baseVelo: 93, range: 2, description: "Rising action" },
+//       SINKER: { name: "Sinker", baseVelo: 92, range: 2, description: "Heavy downward movement" },
+//       SLIDER: { name: "Slider", baseVelo: 83, range: 3, description: "Sharp late break" },
+//       CHANGEUP: { name: "Changeup", baseVelo: 84, range: 2, description: "Good fade" }
+//     }
+//   },
+//   "Cam Robinson": {
+//     name: "Cam Robinson",
+//     level: "AA Binghamton Rumble Ponies",
+//     pitches: {
+//       FASTBALL: { name: "4-Seam Fastball", baseVelo: 95, range: 2, description: "Power pitch with ride" },
+//       CURVEBALL: { name: "Curveball", baseVelo: 78, range: 3, description: "12-6 break" },
+//       SLIDER: { name: "Slider", baseVelo: 85, range: 3, description: "Tight spin" },
+//       CUTTER: { name: "Cutter", baseVelo: 90, range: 2, description: "Late movement" }
+//     }
+//   }
+// };
 
 const R2K_STRATEGIES = {
   "0-0": { expansion: "standard", priority: "Get ahead - Aim just off plate edges", r2k_boost: 1.0 },
@@ -1033,6 +1033,7 @@ const CountLeverageDisplay = ({ count, batter }) => {
 };
 
 
+
 const PitcherTrainingTool = () => {
   const [gameState, setGameState] = useState({
     currentBatter: 0,
@@ -1074,6 +1075,22 @@ const PitcherTrainingTool = () => {
   const [activePitch, setActivePitch] = useState(null);
   const [lastOutcome, setLastOutcome] = useState(null);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+
+  const ACTIVE_PITCHER = {
+    name: "Current Pitcher",
+    pitches: {
+      FASTBALL: { name: "4-Seam Fastball", baseVelo: 93, range: 2, description: "Rising action" },
+      SINKER: { name: "Sinker", baseVelo: 92, range: 2, description: "Heavy downward movement" },
+      SLIDER: { name: "Slider", baseVelo: 83, range: 3, description: "Sharp late break" },
+      CHANGEUP: { name: "Changeup", baseVelo: 84, range: 2, description: "Good fade" }
+    }
+  };
+  
+  // In the component initialization
+  useEffect(() => {
+    // Set default pitcher on component mount
+    setSelectedPitcher(ACTIVE_PITCHER);
+  }, []);
 
   const updateGameState = (outcome, zone, pitch, velocity) => {
     let newCount = { ...gameState.count };
@@ -1122,7 +1139,12 @@ const PitcherTrainingTool = () => {
           newCount = { balls: 0, strikes: 0 };
         }
         break;
-    }
+      default:
+        console.warn(`Unhandled outcome type: ${outcome.type}`);
+        break;
+    };
+    
+    
 
     // Check for strikeout/walk
     if (newCount.strikes >= 3 || newCount.balls >= 4) {
