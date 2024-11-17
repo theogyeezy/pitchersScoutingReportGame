@@ -1057,6 +1057,7 @@ const PitcherTrainingTool = () => {
     const velocity = getRandomVelocity(pitch, 
       (gameState.pitchHistory.length / 100) * 20);
 
+    const outcome = calculateOutcome(
       activePitch,
       zone,
       SEADOGS_LINEUP[gameState.currentBatter],
