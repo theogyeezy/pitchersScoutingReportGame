@@ -1043,6 +1043,7 @@ const CountLeverageDisplay = ({ count, batter }) => {
 
 
 
+
 const PitcherTrainingTool = () => {
   const [gameState, setGameState] = useState({
     currentBatter: 0,
@@ -1058,138 +1059,182 @@ const PitcherTrainingTool = () => {
     }
   });
 
-  const handlePitchSelection = (pitchKey) => {
-    setActivePitch(pitchKey);
-  };
-
-  const handleZoneSelection = (zone) => {
-    const pitch = selectedPitcher.pitches[activePitch];
-    const velocity = getRandomVelocity(pitch, 
-      (gameState.pitchHistory.length / 100) * 20);
-
-    const outcome = calculateOutcome(
-      activePitch,
-      zone,
-      SEADOGS_LINEUP[gameState.currentBatter],
-      velocity,
-      `${gameState.count.balls}-${gameState.count.strikes}`
-    );
-
-    const resultDescription = updateGameState(outcome, zone, pitch, velocity);
-    setLastOutcome(resultDescription);
-    setActivePitch(null);
-  };
-
-  const [selectedPitcher, setSelectedPitcher] = useState(null);
+  const [selectedPitcher, setSelectedPitcher] = useState(ACTIVE_PITCHER);
   const [activePitch, setActivePitch] = useState(null);
   const [lastOutcome, setLastOutcome] = useState(null);
   const [showAdvancedStats, setShowAdvancedStats] = useState(false);
 
-
-  
-  // In the component initialization
-  useEffect(() => {
-    // Set default pitcher on component mount
-    setSelectedPitcher(ACTIVE_PITCHER);
-  }, []);
-
-  const updateGameState = (outcome, zone, pitch, velocity) => {
-    let newCount = { ...gameState.count };
-    let newOuts = gameState.outs;
-    let newCurrentBatter = gameState.currentBatter;
-    let resultDescription = outcome.description;
-    
-    // Track R2K opportunities
-    const isExpandedZone = zone.includes('chase') || zone.includes('borderline');
-    const isSuccessfulR2K = isExpandedZone && 
-      (outcome.type === 'SWING_MISS' || outcome.type === 'WEAK_CONTACT');
-
-    // Update R2K stats
-    let newR2kStats = {...gameState.r2kStats};
-    if (isExpandedZone) {
-      newR2kStats.opportunities++;
-      if (isSuccessfulR2K) newR2kStats.successful++;
-      newR2kStats.expanded_zones++;
-    }
-
-    // Handle pitch outcome
-    switch (outcome.type) {
-      case 'SWING_MISS':
-        newCount.strikes++;
-        break;
-      case 'FOUL':
-        if (newCount.strikes < 2) newCount.strikes++;
-        break;
-      case 'TAKE':
-        if (!zone.includes('chase') && !zone.includes('borderline')) {
-          newCount.strikes++;
-          resultDescription += " - Strike!";
-        } else {
-          newCount.balls++;
-          resultDescription += " - Ball!";
-        }
-        break;
-      case 'WEAK_CONTACT':
-      case 'HARD_CONTACT':
-        if (!resultDescription.includes('HOME RUN')) {
-          newOuts++;
-          newCurrentBatter = (newCurrentBatter + 1) % SEADOGS_LINEUP.length;
-          newCount = { balls: 0, strikes: 0 };
-        } else {
-          newCurrentBatter = (newCurrentBatter + 1) % SEADOGS_LINEUP.length;
-          newCount = { balls: 0, strikes: 0 };
-        }
-        break;
-      default:
-        console.warn(`Unhandled outcome type: ${outcome.type}`);
-        break;
-    };
-    
-    
-
-    // Check for strikeout/walk
-    if (newCount.strikes >= 3 || newCount.balls >= 4) {
-      resultDescription = newCount.strikes >= 3 ? "Strikeout! ⚔️" : "Walk! 🚶";
-      newCurrentBatter = (newCurrentBatter + 1) % SEADOGS_LINEUP.length;
-      newCount = { balls: 0, strikes: 0 };
-    }
-
-    // Check for inning change
-    if (newOuts >= 3) {
-      return handleInningChange();
-    }
-
-    // Update state
-    setGameState(prev => ({
-      ...prev,
-      count: newCount,
-      outs: newOuts,
-      currentBatter: newCurrentBatter,
-      r2kStats: newR2kStats,
-      pitchHistory: [...prev.pitchHistory, {
-        type: activePitch,
-        pitch: pitch.name,
-        velocity,
-        location: zone,
-        outcome: resultDescription,
-        count: `${prev.count.balls}-${prev.count.strikes}`,
-        batter: SEADOGS_LINEUP[prev.currentBatter].name
-      }]
-    }));
-
-    return resultDescription;
+  const handlePitchSelection = (pitchKey) => {
+    setActivePitch(pitchKey);
   };
 
-  const handleInningChange = () => {
-    setGameState(prev => ({
-      ...prev,
-      inning: prev.inning + 1,
-      outs: 0,
-      currentBatter: 0,
-      count: { balls: 0, strikes: 0 },
-      bases: [false, false, false]
-    }));
-    return "Inning over! Three outs! ⚾";
+  const getRandomVelocity = (pitch, fatigue) => {
+    const fatigueEffect = (fatigue / 100) * 2;
+    const baseVelo = pitch.baseVelo - fatigueEffect;
+    const range = pitch.range;
+    const randomVariation = Math.random() * range;
+    const finalVelocity = baseVelo - (range / 2) + randomVariation;
+    return finalVelocity.toFixed(1);
+  };
+
+  const calculateOutcome = (pitchType, location, batter, velocity, countString) => {
+    const zoneStats = batter.zones[location];
+    const battingAvg = parseFloat(zoneStats.avg);
+    const slugging = parseFloat(zoneStats.slug);
+    const whiffRate = parseInt(zoneStats.whiff) / 100;
+    
+    const [balls, strikes] = countString.split('-').map(Number);
+    const isHitterCount = balls > strikes;
+    const isPitcherCount = strikes > balls;
+
+    const isChaseZone = location.includes('chase');
+    const isBorderlineZone = location.includes('borderline');
+
+    let outcomes = [
+      {
+        type: "SWING_MISS",
+        probability: whiffRate * (isPitcherCount ? 1.2 : 1) * (isChaseZone ? 1.5 : 1),
+        description: "Swing and miss!"
+      },
+      {
+        type: "FOUL",
+        probability: 0.15 * (strikes === 2 ? 1.5 : 1) * (isBorderlineZone ? 1.3 : 1),
+        description: "Foul ball"
+      },
+      {
+        type: "WEAK_CONTACT",
+        probability: (1 - battingAvg) * 0.4 * (isChaseZone ? 1.4 : 1),
+        description: `Weak ${['grounder to short', 'pop-up to second', 'fly ball to left', 'chopper to third'][Math.floor(Math.random() * 4)]}`
+      },
+      {
+        type: "HARD_CONTACT",
+        probability: slugging * 0.3 * (isChaseZone ? 0.5 : isBorderlineZone ? 0.8 : 1),
+        description: () => {
+          if (Math.random() < slugging - 0.3 && !isChaseZone) {
+            return "HOME RUN! Ball crushed to deep " + ['left', 'center', 'right'][Math.floor(Math.random() * 3)] + "!";
+          }
+          return `Hard ${['line drive', 'ground ball', 'fly ball'][Math.floor(Math.random() * 3)]}!`;
+        }
+      },
+      {
+        type: "TAKE",
+        probability: (isChaseZone ? 0.4 : isBorderlineZone ? 0.2 : 0.1) * (isHitterCount ? 1.3 : 1),
+        description: "Takes the pitch"
+      }
+    ];
+
+    const total = outcomes.reduce((sum, o) => sum + o.probability, 0);
+    outcomes.forEach(o => o.probability /= total);
+
+    const random = Math.random();
+    let cumulativeProbability = 0;
+
+    for (const outcome of outcomes) {
+      cumulativeProbability += outcome.probability;
+      if (random <= cumulativeProbability) {
+        return {
+          ...outcome,
+          description: typeof outcome.description === 'function'
+            ? outcome.description()
+            : outcome.description
+        };
+      }
+    }
+
+    return outcomes[0];
+  };
+
+  const handleZoneSelection = (zone) => {
+    if (!activePitch || !selectedPitcher) return;
+
+    const pitch = selectedPitcher.pitches[activePitch];
+    const velocity = getRandomVelocity(pitch, (gameState.pitchHistory.length / 100) * 20);
+    const currentBatter = SEADOGS_LINEUP[gameState.currentBatter];
+    
+    const outcome = calculateOutcome(
+      activePitch,
+      zone,
+      currentBatter,
+      velocity,
+      `${gameState.count.balls}-${gameState.count.strikes}`
+    );
+
+    setGameState(prevState => {
+      let newState = { ...prevState };
+      const newCount = { ...prevState.count };
+      
+      // Handle pitch outcome
+      switch (outcome.type) {
+        case 'SWING_MISS':
+          newCount.strikes++;
+          break;
+        case 'FOUL':
+          if (newCount.strikes < 2) newCount.strikes++;
+          break;
+        case 'TAKE':
+          if (!zone.includes('chase') && !zone.includes('borderline')) {
+            newCount.strikes++;
+          } else {
+            newCount.balls++;
+          }
+          break;
+        case 'WEAK_CONTACT':
+        case 'HARD_CONTACT':
+          newState.outs++;
+          if (newState.outs >= 3) {
+            newState.outs = 0;
+            newState.inning++;
+          }
+          newState.currentBatter = (newState.currentBatter + 1) % SEADOGS_LINEUP.length;
+          newCount.balls = 0;
+          newCount.strikes = 0;
+          break;
+      }
+
+      // Check for strikeout/walk
+      if (newCount.strikes >= 3 || newCount.balls >= 4) {
+        newState.currentBatter = (newState.currentBatter + 1) % SEADOGS_LINEUP.length;
+        newCount.balls = 0;
+        newCount.strikes = 0;
+        if (newCount.strikes >= 3) {
+          newState.outs++;
+        }
+      }
+
+      // Update R2K stats
+      const isExpandedZone = zone.includes('chase') || zone.includes('borderline');
+      const isSuccessfulR2K = isExpandedZone && 
+        (outcome.type === 'SWING_MISS' || outcome.type === 'WEAK_CONTACT');
+
+      if (isExpandedZone) {
+        newState.r2kStats = {
+          ...newState.r2kStats,
+          opportunities: newState.r2kStats.opportunities + 1,
+          successful: isSuccessfulR2K ? newState.r2kStats.successful + 1 : newState.r2kStats.successful,
+          expanded_zones: newState.r2kStats.expanded_zones + 1
+        };
+      }
+
+      // Add to pitch history
+      newState.pitchHistory = [
+        ...newState.pitchHistory,
+        {
+          type: activePitch,
+          pitch: pitch.name,
+          velocity,
+          location: zone,
+          outcome: outcome.description,
+          count: `${prevState.count.balls}-${prevState.count.strikes}`,
+          batter: currentBatter.name
+        }
+      ];
+
+      newState.count = newCount;
+      return newState;
+    });
+
+    setLastOutcome(outcome.description);
+    setActivePitch(null);
   };
 
   return (
