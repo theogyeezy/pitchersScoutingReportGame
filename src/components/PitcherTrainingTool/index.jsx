@@ -6,6 +6,16 @@ const ZONE_TYPES = {
   CHASE: 'chase'
 };
 
+const ACTIVE_PITCHER = {
+  name: "Current Pitcher",
+  pitches: {
+    FASTBALL: { name: "4-Seam Fastball", baseVelo: 93, range: 2, description: "Rising action" },
+    SINKER: { name: "Sinker", baseVelo: 92, range: 2, description: "Heavy downward movement" },
+    SLIDER: { name: "Slider", baseVelo: 83, range: 3, description: "Sharp late break" },
+    CHANGEUP: { name: "Changeup", baseVelo: 84, range: 2, description: "Good fade" }
+    }
+  };
+
 // const DODGERS_LINEUP = [
 //   {
 //     name: "Mookie Betts",
@@ -488,16 +498,6 @@ const SEADOGS_LINEUP = [
     notes: "- Advanced approach at plate\n- Strong zone control\n- Handles both RHP/LHP well\n- Clutch performer\n- Improved power development"
   }
 ];
-
-const ACTIVE_PITCHER = {
-  name: "Current Pitcher",
-  pitches: {
-    FASTBALL: { name: "4-Seam Fastball", baseVelo: 93, range: 2, description: "Rising action" },
-    SINKER: { name: "Sinker", baseVelo: 92, range: 2, description: "Heavy downward movement" },
-    SLIDER: { name: "Slider", baseVelo: 83, range: 3, description: "Sharp late break" },
-    CHANGEUP: { name: "Changeup", baseVelo: 84, range: 2, description: "Good fade" }
-  }
-};
 
 // const PITCHERS = {
 //   "Jordan Geber": {
